@@ -1,14 +1,43 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Webcam Viewer</title>
+    <title>Digital AV</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="container">
+      <div class="toolbar">
+<button onclick="showSettingsPopup()">Settings</button>
+      </div>
       <video autoplay ondblclick="enterFullscreen()"></video>
     </div>
+<div class="settings-popup">
+<form onsubmit="event.preventDefault(); onSaveSettings()"></form>
+  <div class="form-group">
+    <label for="audioDeviceId">Audio Source:</label>
+    <select id="audioDeviceId" name="audioDeviceId">
+    </select>
+  </div>
 
+  <div class="form-group">
+    <label for="videoDeviceId">Video Source:</label>
+    <select id="videoDeviceId" name="videoDeviceId">
+    </select>
+  </div>
+  <div class="form-group">
+    <button type="submit">Submit</button>
+    <button type="button" onclick="hideSettingsPopup()">Cancel</button>
+  </div>
+</form>
+</div>
     <script src="script.js"></script>
+    <script type="text/javascript">
+      function onSaveSettings() {
+        const audioSource = document.getElementById('audio-source').value;
+        const videoSource = document.getElementById('video-source').value;
+        console.log('Save settings', audioSource, videoSource);
+        hideSettingsPopup();
+      }
+    </script>
   </body>
 </html>
