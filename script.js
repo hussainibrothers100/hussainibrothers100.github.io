@@ -1,5 +1,11 @@
 console.log("Use deviceId query param to request a specific device.");
 var selectedDevices = {};
+var vid = document.querySelector("video");
+var constraints = {
+  video: { width: 1920, height: 1080 },
+  audio: true,
+};
+// var mouseTimeout;
 navigator.mediaDevices.getUserMedia({ video: true, audio: true })
   .then(() => {
     listDevices();
@@ -10,59 +16,59 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
     // Add your code here to handle the denied access or show an error message
     console.error("Error accessing video and audio devices:", error);
   });
-  navigator.permissions.query({name: 'microphone'})
+navigator.permissions.query({ name: 'microphone' })
   .then((permissionObj) => {
-   console.log(permissionObj.state);
+    console.log(permissionObj.state);
   })
   .catch((error) => {
-   console.log('Got error :', error);
+    console.log('Got error :', error);
   })
- 
-  navigator.permissions.query({name: 'camera'})
-  .then((permissionObj) => {
-   console.log(permissionObj.state);
-  })
-  .catch((error) => {
-   console.log('Got error :', error);
-  })
-  function listDevices(){
 
-    navigator.mediaDevices
-      .enumerateDevices()
-      // .then((devices) =>
-      //   devices.filter((d) => d.kind === "videoinput" || d.kind === "audioinput")
-      // )
-      .then((devices) => {
-        console.log(devices);
-        const videoDDL = document.querySelector("#videoDeviceId");
-        var audioDDL = document.querySelector("#audioDeviceId");
-        while (videoDDL.length > 0) {
-          videoDDL.remove(videoDDL.length-1);
+navigator.permissions.query({ name: 'camera' })
+  .then((permissionObj) => {
+    console.log(permissionObj.state);
+  })
+  .catch((error) => {
+    console.log('Got error :', error);
+  })
+function listDevices() {
+
+  navigator.mediaDevices
+    .enumerateDevices()
+    // .then((devices) =>
+    //   devices.filter((d) => d.kind === "videoinput" || d.kind === "audioinput")
+    // )
+    .then((devices) => {
+      console.log(devices);
+      const videoDDL = document.querySelector("#videoDeviceId");
+      var audioDDL = document.querySelector("#audioDeviceId");
+      while (videoDDL.length > 0) {
+        videoDDL.remove(videoDDL.length - 1);
+      }
+      while (audioDDL.length > 0) {
+        audioDDL.remove(audioDDL.length - 1);
+      }
+      for (const device of devices) {
+        if (device.kind === "videoinput") {
+          videoDDL.options[videoDDL.options.length] = new Option(
+            device.label,
+            device.deviceId
+          );
         }
-        while (audioDDL.length > 0) {
-          audioDDL.remove(audioDDL.length-1);
+        if (device.kind === "audioinput") {
+          audioDDL.options[audioDDL.options.length] = new Option(
+            device.label,
+            device.deviceId
+          );
         }
-        for (const device of devices) {
-          if (device.kind === "videoinput") {
-            videoDDL.options[videoDDL.options.length] = new Option(
-              device.label,
-              device.deviceId
-            );
-          }
-          if (device.kind === "audioinput") {
-            audioDDL.options[audioDDL.options.length] = new Option(
-              device.label,
-              device.deviceId
-            );
-          }
-          // devices
-          // .map((d) => {
-          //   return "[" + d.kind + "] " + d.label + ": " + d.deviceId;
-          // })
-          // .join("\n\n")
-        }
-      });
-  }
+        // devices
+        // .map((d) => {
+        //   return "[" + d.kind + "] " + d.label + ": " + d.deviceId;
+        // })
+        // .join("\n\n")
+      }
+    });
+}
 
 function showSettingsPopup() {
   listDevices();
@@ -75,7 +81,29 @@ function hideSettingsPopup() {
   settingsPopup.style.display = "none";
 }
 
-function onsubmit(e){
+
+function showToolbar() {
+  const toolbar = document.querySelector(".toolbar");
+  toolbar.style.opacity = "1";
+}
+
+function hideToolbar() {
+  const toolbar = document.querySelector(".toolbar");
+  toolbar.style.opacity = "0";
+}
+
+// document.onmousemove = function () {
+//   clearTimeout(mouseTimeout);
+//   if (document.querySelector(".toolbar").style.visibility === "hidden") {
+//     document.querySelector(".toolbar").style.visibility = "visible";
+//     return;
+//   }
+//   mouseTimeout = setTimeout(function () {
+//     document.querySelector(".toolbar").style.visibility = "hidden";
+//   }, 5000);
+// }
+
+function onsubmit(e) {
   e.preventDefault();
   onSaveSettings();
   hideSettingsPopup();
@@ -88,16 +116,16 @@ function onSaveSettings() {
   selectedDevices.videoDeviceId = videoDeviceId;
   selectedDevices.audioDeviceId = audioDeviceId;
   selectedDevices.deviceLabel = deviceLabel;
-  localStorage.setItem('selected_devices',JSON.stringify(selectedDevices));
+  localStorage.setItem('selected_devices', JSON.stringify(selectedDevices));
   loadSettings();
 }
 
-function loadSettings(){
+function loadSettings() {
   const settings = localStorage.getItem('selected_devices');
-  if(settings){
+  if (settings) {
     selectedDevices = JSON.parse(settings);
     startVideo();
-  }else{
+  } else {
     showSettingsPopup();
   }
 }
@@ -109,11 +137,6 @@ async function startVideo() {
     const devices = await navigator.mediaDevices.enumerateDevices();
     foundDevice = devices.find((d) => d.label.includes(selectedDevices.deviceLabel));
   }
-
-  const constraints = {
-    video: { width: 1920, height: 1080 },
-    audio: false,
-  };
 
   const finalVideoDeviceId = selectedDevices.videoDeviceId || foundDevice.deviceId;
 
@@ -130,15 +153,47 @@ async function startVideo() {
       noiseSuppression: false,
     };
   }
-
-  console.log({ constraints });
-
-  const stream = await navigator.mediaDevices.getUserMedia(constraints);
-  document.querySelector("video").srcObject = stream;
+  await setVideoParameters();
 }
-
+async function setVideoParameters() {
+  const stream = await navigator.mediaDevices.getUserMedia(constraints);
+  vid.srcObject = stream;
+  console.log(constraints);
+  vid.width = constraints.video.width;
+  vid.style.width = constraints.video.width + "px";
+  if (!document.fullscreenElement) {
+    vid.height = constraints.video.height;
+    vid.style.height = constraints.video.height + "px";
+  } else {
+    vid.height = vid.style.height = undefined;
+  }
+}
+function toggleFullscreen() {
+  if (document.fullscreenElement) {
+    exitFullscreen();
+  } else {
+    enterFullscreen();
+  }
+}
+function changeSize(factor) {
+  constraints.video.width += factor;
+  constraints.video.height += factor;
+  setVideoParameters();
+  document.getElementById("infoBar").innerText = `${constraints.video.width}x${constraints.video.height}`;
+}
+function exitFullscreen() {
+  if (vid.exitFullscreen) {
+    vid.exitFullscreen();
+  } else if (vid.mozCancelFullScreen) {
+    vid.mozCancelFullScreen();
+  } else if (vid.msExitFullscreen) {
+    vid.msExitFullscreen();
+  } else if (vid.webkitExitFullscreen) {
+    vid.webkitExitFullscreen();
+  }
+}
 function enterFullscreen() {
-  const element = document.documentElement;
+  const element = vid;
 
   if (element.requestFullscreen) {
     element.requestFullscreen();
@@ -150,5 +205,23 @@ function enterFullscreen() {
     element.webkitRequestFullscreen();
   }
 }
+function getScreenSize() {
+  return { width: screen.width, height: screen.height };
+}
+function getWindowSize() {
+  return { width: window.innerWidth, height: window.innerHeight };
+}
 var form = document.getElementById("settingsForm");
 form.addEventListener('submit', onsubmit);
+
+addEventListener("fullscreenchange", async (event) => {
+  document.fullscreenElement ? hideToolbar() : showToolbar();
+  if (document.fullscreenElement) {
+    constraints.video.width = screen.width;
+    constraints.video.height = screen.height;
+  } else {
+    constraints.video.width = window.innerWidth;
+    constraints.video.height = constraints.video.height = window.innerHeight - 50;
+  }
+  await setVideoParameters();
+});
