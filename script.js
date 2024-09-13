@@ -1,7 +1,9 @@
 console.log("Use deviceId query param to request a specific device.");
+var selectedDevices = {};
 navigator.mediaDevices.getUserMedia({ video: true, audio: true })
   .then(() => {
     listDevices();
+    loadSettings();
   })
   .catch((error) => {
     // Access to video and audio devices denied
@@ -62,11 +64,6 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       });
   }
 
-const urlParams = new URLSearchParams(window.location.search);
-const videoDeviceId = urlParams.get("deviceId");
-const videoDeviceLabelSearch = urlParams.get("deviceLabel");
-const audioDeviceId = urlParams.get("audioDeviceId");
-
 function showSettingsPopup() {
   listDevices();
   const settingsPopup = document.querySelector(".settings-popup");
@@ -78,25 +75,39 @@ function hideSettingsPopup() {
   settingsPopup.style.display = "none";
 }
 
+function onsubmit(e){
+  e.preventDefault();
+  onSaveSettings();
+  hideSettingsPopup();
+}
 function onSaveSettings() {
   const videoDeviceId = document.querySelector("#videoDeviceId").value;
   const audioDeviceId = document.querySelector("#audioDeviceId").value;
   const deviceLabel = document.querySelector("#videoDeviceId").text;
 
-  const url = new URL(window.location.href);
-  url.searchParams.set("deviceId", videoDeviceId);
-  url.searchParams.set("audioDeviceId", audioDeviceId);
-  url.searchParams.set("deviceLabel", deviceLabel);
+  selectedDevices.videoDeviceId = videoDeviceId;
+  selectedDevices.audioDeviceId = audioDeviceId;
+  selectedDevices.deviceLabel = deviceLabel;
+  localStorage.setItem('selected_devices',JSON.stringify(selectedDevices));
+  loadSettings();
+}
 
-  window.location.href = url.toString();
+function loadSettings(){
+  const settings = localStorage.getItem('selected_devices');
+  if(settings){
+    selectedDevices = JSON.parse(settings);
+    startVideo();
+  }else{
+    showSettingsPopup();
+  }
 }
 
 async function startVideo() {
   // find video device by label search
   let foundDevice = null;
-  if (videoDeviceLabelSearch) {
+  if (selectedDevices.deviceLabel) {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    foundDevice = devices.find((d) => d.label.includes(videoDeviceLabelSearch));
+    foundDevice = devices.find((d) => d.label.includes(selectedDevices.deviceLabel));
   }
 
   const constraints = {
@@ -104,15 +115,15 @@ async function startVideo() {
     audio: false,
   };
 
-  const finalVideoDeviceId = videoDeviceId || foundDevice.deviceId;
+  const finalVideoDeviceId = selectedDevices.videoDeviceId || foundDevice.deviceId;
 
   if (finalVideoDeviceId) {
     constraints.video.deviceId = { exact: finalVideoDeviceId };
   }
 
-  if (audioDeviceId) {
+  if (selectedDevices.audioDeviceId) {
     constraints.audio = {
-      deviceId: { exact: audioDeviceId },
+      deviceId: { exact: selectedDevices.audioDeviceId },
       autoGainControl: false,
       echoCancellation: false,
       googAutoGainControl: false,
@@ -139,5 +150,5 @@ function enterFullscreen() {
     element.webkitRequestFullscreen();
   }
 }
-
-startVideo();
+var form = document.getElementById("settingsForm");
+form.addEventListener('submit', onsubmit);
