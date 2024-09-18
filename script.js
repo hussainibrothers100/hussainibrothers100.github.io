@@ -1,10 +1,76 @@
 console.log("Use deviceId query param to request a specific device.");
 var selectedDevices = {};
 var vid = document.querySelector("video");
-var constraints = {
-  video: { width: 1920, height: 1080 },
-  audio: true,
-};
+const resolutions = [
+  {
+    "label": "4K(UHD)",
+    "width": 3840,
+    "height": 2160,
+    "ratio": "16:9"
+  },
+  {
+    "label": "1080p(FHD)",
+    "width": 1920,
+    "height": 1080,
+    "ratio": "16:9"
+  },
+  {
+    "label": "UXGA",
+    "width": 1600,
+    "height": 1200,
+    "ratio": "4:3"
+  },
+  {
+    "label": "720p(HD)",
+    "width": 1280,
+    "height": 720,
+    "ratio": "16:9"
+  },
+  {
+    "label": "SVGA",
+    "width": 800,
+    "height": 600,
+    "ratio": "4:3"
+  },
+  {
+    "label": "VGA",
+    "width": 640,
+    "height": 480,
+    "ratio": "4:3"
+  },
+  {
+    "label": "360p(nHD)",
+    "width": 640,
+    "height": 360,
+    "ratio": "16:9"
+  },
+  {
+    "label": "CIF",
+    "width": 352,
+    "height": 288,
+    "ratio": "4:3"
+  },
+  {
+    "label": "QVGA",
+    "width": 320,
+    "height": 240,
+    "ratio": "4:3"
+  },
+  {
+    "label": "QCIF",
+    "width": 176,
+    "height": 144,
+    "ratio": "4:3"
+  },
+  {
+    "label": "QQVGA",
+    "width": 160,
+    "height": 120,
+    "ratio": "4:3"
+  }
+
+];
+
 // var mouseTimeout;
 navigator.mediaDevices.getUserMedia({ video: true, audio: true })
   .then(() => {
@@ -116,6 +182,9 @@ function onSaveSettings() {
   selectedDevices.videoDeviceId = videoDeviceId;
   selectedDevices.audioDeviceId = audioDeviceId;
   selectedDevices.deviceLabel = deviceLabel;
+  const resolution = document.querySelector("#resolutions").value.split("x");
+  selectedDevices.width = parseInt(resolution[0]);
+  selectedDevices.height = parseInt(resolution[1]);
   localStorage.setItem('selected_devices', JSON.stringify(selectedDevices));
   loadSettings();
 }
@@ -131,6 +200,10 @@ function loadSettings() {
 }
 
 async function startVideo() {
+  const constraints = {
+    video: { width: { exact: selectedDevices.width ?? 1920 }, height: { exact: selectedDevices.height ?? 1080 } },
+    audio: false
+  };
   // find video device by label search
   let foundDevice = null;
   if (selectedDevices.deviceLabel) {
@@ -153,20 +226,21 @@ async function startVideo() {
       noiseSuppression: false,
     };
   }
-  await setVideoParameters();
+  console.log(constraints);
+  await setVideoParameters(constraints);
 }
-async function setVideoParameters() {
+async function setVideoParameters(constraints) {
   const stream = await navigator.mediaDevices.getUserMedia(constraints);
   vid.srcObject = stream;
-  console.log(constraints);
-  vid.width = constraints.video.width;
-  vid.style.width = constraints.video.width + "px";
-  if (!document.fullscreenElement) {
-    vid.height = constraints.video.height;
-    vid.style.height = constraints.video.height + "px";
-  } else {
-    vid.height = vid.style.height = undefined;
-  }
+  // console.log(constraints);
+  // vid.width = constraints.video.width;
+  // vid.style.width = constraints.video.width + "px";
+  // if (!document.fullscreenElement) {
+  //   vid.height = constraints.video.height;
+  //   vid.style.height = constraints.video.height + "px";
+  // } else {
+  //   vid.height = vid.style.height = undefined;
+  // }
 }
 function toggleFullscreen() {
   if (document.fullscreenElement) {
@@ -216,12 +290,19 @@ form.addEventListener('submit', onsubmit);
 
 addEventListener("fullscreenchange", async (event) => {
   document.fullscreenElement ? hideToolbar() : showToolbar();
-  if (document.fullscreenElement) {
-    constraints.video.width = screen.width;
-    constraints.video.height = screen.height;
-  } else {
-    constraints.video.width = window.innerWidth;
-    constraints.video.height = constraints.video.height = window.innerHeight - 50;
-  }
+  // if (document.fullscreenElement) {
+  //   constraints.video.width = screen.width;
+  //   constraints.video.height = screen.height;
+  // } else {
+  //   constraints.video.width = window.innerWidth;
+  //   constraints.video.height = constraints.video.height = window.innerHeight - 50;
+  // }
   await setVideoParameters();
 });
+onload = function () {
+  const resolutionsDDL = document.querySelector("#resolutions");
+  resolutions.forEach((r) => {
+    resolutionsDDL.options[resolutionsDDL.options.length] = new Option(r.label, r.width + "x" + r.height);
+  });
+  resolutionsDDL.value = selectedDevices.width + "x" + selectedDevices.height;
+}
